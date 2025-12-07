@@ -1,0 +1,28 @@
+%% Use existing time vector
+t_I = t;        % correct time vector
+I = Irms;       % Irms current signal
+
+%% Step 1: Clean impulsive spikes
+I_smooth = smoothdata(I, 'movmedian', 5);
+
+%% Step 2: Compute derivative
+dI = [0; diff(I_smooth)];
+
+% Smooth derivative for readability
+dI = smoothdata(dI, 'sgolay', 9);
+dI = smoothdata(dI, 'movmean', 20);
+
+%% Step 3: Zero-out micro noise
+TH = 0.02 * max(abs(dI));
+dI(abs(dI) < TH) = 0;
+
+%% Step 4: Plot
+figure;
+plot(t_I, dI, 'LineWidth', 1.5);
+grid on;
+xlabel('Time');
+ylabel('d(Irms)/dt');
+title('Fault-Detectable Differential Signal from Irms');
+legend('d(Irms)/dt','Location','northwest');
+dI_ts = timeseries(dI, t_I);
+dI_ts.Name = 'Irms_Derivative_Filtered';
