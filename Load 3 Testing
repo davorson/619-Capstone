@@ -1,52 +1,34 @@
+%% Use Load3 directly from workspace
 t_testing = Load3.Time;
 signal_testing = Load3.Data;
 
-%% --- Ultra-clean filtering for Load3 ---
-
-% Convert to double + remove NAN/INF
-sig = double(signal(:));
+%% Ultra-clean filtering for Load3
+sig = double(Load3.Data);
+sig = sig(:);
 sig = sig(~isnan(sig) & isfinite(sig));
 
-% Normalize to [0,1] for stable thresholding
-sig_norm = rescale(sig, 0, 1);
+%% Normalize to [0 1]
+sig = rescale(sig,0,1);
 
+%% Stage 1: Wavelet shrinkage
+sig_stage1 = wdenoise(sig,6, ...
+    'Wavelet','coif5', ...
+    'DenoisingMethod','SURE', ...
+    'ThresholdRule','Hard', ...
+    'NoiseEstimate','LevelDependent');
 
-%% ============================
-%   Stage 1: Wavelet Shrinkage
-% ============================
-sig_stage1 = wdenoise(sig_norm, 6, ...
-    'Wavelet', 'coif5', ...            % smooth, stable wavelet
-    'DenoisingMethod', 'SURE', ...     % good auto-threshold
-    'ThresholdRule', 'Hard', ...       % preserves edges
-    'NoiseEstimate', 'LevelDependent');
+%% Stage 2: Low-pass Butterworth filter
+Fs = 1;          % sampling rate (adjust if needed)
+Fc = 0.002;      % normalized cutoff
 
+[b,a] = butter(4,Fc,'low');
+sig_stage2 = filtfilt(b,a,sig_stage1);
 
-%% ============================
-%   Stage 2: Butterworth Low-Pass
-% ============================
-Fs = 1;         % Sampling rate (change if known)
-Fc = 0.002;     % Cutoff frequency (smooth envelope)
+%% Optional smoothing
+sig_clean = smoothdata(sig_stage2,'movmean',100);
 
-[b,a] = butter(4, Fc, 'low');          % 4th order Butterworth
-sig_stage2 = filtfilt(b, a, sig_stage1);
+%% Rescale back to original Load3 range
+sig_clean = rescale(sig_clean, min(Load3.Data), max(Load3.Data));
 
-
-%% ============================
-%   Stage 3: Optional cosmetic smooth
-% ============================
-sig_clean_norm = smoothdata(sig_stage2, 'movmean', 100);
-
-
-%% ============================
-%   Rescale back to original range
-% ============================
-sig_clean = rescale(sig_clean_norm, min(signal), max(signal));
-
-
-%% ============================
-%   Plot Comparison
-% ============================
-figure;
-plot(t, signal, 'Color', [0.7 0.7 0.7], ...
-    'DisplayName', 'Original'); 
-hold on;
+%% Simple store (so you can use it later)
+Load3_filtered_testing = sig_clean;
