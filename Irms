@@ -1,0 +1,6 @@
+Irms = sigsOut_1{1}.Values.Data;
+d_Irms = zeros(1, length(sigsOut{1}.Values.Data));
+
+for n = 2:length(Irms)
+    d_Irms(n) = Irms(n) - Irms(n - 1);
+end
