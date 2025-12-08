@@ -1,0 +1,62 @@
+%% ============================================
+%   TRAINING DATA (label from Signal Labeler)
+%% ============================================
+
+Irms = sigsOut_1{1}.Values.Data;      % raw RMS current (training)
+d_Irms = zeros(1, length(Irms));      % allocate derivative
+
+% Compute derivative of Irms
+for n = 2:length(Irms)
+    d_Irms(n) = Irms(n) - Irms(n - 1);
+end
+
+% Initialize true/false label vector
+d_Irms_truevalues = strings(1, length(d_Irms));
+
+% Default all samples to "No"
+for n = 1:length(d_Irms)
+    d_Irms_truevalues(n) = "No";
+end
+
+% Replace labeled fault regions with "True"
+% d_lss comes from Signal Labeler export
+for n = 1:height(d_lss.Labels.Fault{1, 1})
+    d_Irms_truevalues( ...
+        d_lss.Labels.Fault{1,1}(n,1).ROILimits(1) : ...
+        d_lss.Labels.Fault{1,1}(n,1).ROILimits(2) ) = "True";
+end
+
+% Convert to categorical for machine learning
+d_Irms_truevalues_cat = categorical(d_Irms_truevalues);
+
+
+
+%% ============================================
+%   TESTING DATA (no manual labeling)
+%% ============================================
+
+Irms_2 = sigsOut_2{1}.Values.Data;     % raw RMS current (testing)
+d_Irms_2 = zeros(1, length(Irms_2));   % allocate derivative
+
+% Compute derivative of testing Irms
+for n = 2:length(Irms_2)
+    d_Irms_2(n) = Irms_2(n) - Irms_2(n - 1);
+end
+
+% Initialize true/false vector for testing
+Irms_truevalues_2 = strings(1, length(Irms_2));
+
+% Default to "No"
+for n = 1:length(Irms_2)
+    Irms_truevalues_2(n) = "No";
+end
+
+% Auto-label: any positive derivative = "True"
+for n = 1:length(Irms_2)
+    if d_Irms_2(n) > 0
+        Irms_truevalues_2(n) = "True";
+    end
+end
+
+% Convert to categorical
+Irms_truevalues_cat_2 = categorical(Irms_truevalues_2);
