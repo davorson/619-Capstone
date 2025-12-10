@@ -1,6 +1,20 @@
+sigsOut_1 = sigsOut
+
 Irms = sigsOut_1{1}.Values.Data;
-d_Irms = zeros(1, length(sigsOut{1}.Values.Data));
+d_Irms = zeros(1, length(sigsOut_1{1}.Values.Data));
 
 for n = 2:length(Irms)
     d_Irms(n) = Irms(n) - Irms(n - 1);
 end
+
+plot(d_Irms);
+title('Processed Training Data (1st Derivative / Change in Data)');
+xlabel('Sample');
+ylabel('dI/dt (A/s)');
+grid on;
+
+plot(Irms);
+title('Unfiltered Training Data');
+xlabel('Sample');
+ylabel('(A/s)');
+grid on;
