@@ -1,0 +1,32 @@
+// Pin assignments
+const int beamPin  = 2;   // IR beam sensor output
+const int motorPin = 9;   // MOSFET gate (IRL510)
+
+const unsigned long runTime = 10000; // 10 seconds (ms)
+
+bool motorRunning = false;
+unsigned long motorStartTime = 0;
+
+void setup() {
+  pinMode(beamPin, INPUT_PULLUP);  // beam sensor goes LOW when broken
+  pinMode(motorPin, OUTPUT);
+
+  digitalWrite(motorPin, LOW);     // motor OFF
+}
+
+void loop() {
+  int beamState = digitalRead(beamPin);
+
+  // ---- Trigger motor ON once when beam breaks ----
+  if (beamState == LOW && !motorRunning) {
+    motorRunning = true;
+    motorStartTime = millis();
+    digitalWrite(motorPin, HIGH);  // motor ON
+  }
+
+  // ---- Turn motor OFF after 10 seconds ----
+  if (motorRunning && (millis() - motorStartTime >= runTime)) {
+    motorRunning = false;
+    digitalWrite(motorPin, LOW);   // motor OFF
+  }
+}
